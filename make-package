@@ -1,0 +1,34 @@
+#!/bin/bash
+
+pushd "$(dirname ${BASH_SOURCE[0]})/" > /dev/null
+
+BUILD_VER=`grep 'Version: ' pkg-debian/DEBIAN/control | cut -d':' -f 2 | xargs`
+
+
+# refresh DEBIAN/md5sums
+
+pushd "$(dirname ${BASH_SOURCE[0]})/pkg-debian" > /dev/null
+find . -type f ! -regex '.*.hg.*' ! -regex '.*?debian-binary.*' ! -regex '.*?DEBIAN.*' -printf '%P ' | xargs md5sum > DEBIAN/md5sums
+popd > /dev/null
+
+# copy source to temp dir to fix permissions
+# in WSL, shared drives have 0777 on files & dirs
+
+BUILD_DIR=`mktemp --tmpdir --directory pkg-debian.XXXX`
+
+cp -rp pkg-debian/* $BUILD_DIR/
+find $BUILD_DIR -type d -exec chmod 0755 {} \;
+find $BUILD_DIR/usr/bin -type f -exec chmod 0555 {} \;
+
+
+# create package
+
+dpkg -b $BUILD_DIR/ wabashd-shell-${BUILD_VER}.deb
+
+
+# cleanup
+
+rm -rf $BUILD_DIR
+
+popd > /dev/null
+

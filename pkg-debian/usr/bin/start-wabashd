@@ -1,0 +1,80 @@
+#!/bin/bash
+
+version=4
+shell=/bin/bash
+interval=2
+
+function tick()
+{
+        local sess=0
+        local daem=0
+
+        while read -r proc; do
+                if [ "$proc" == "init" ] || [ "$proc" == "bash" ] ; then
+                        sess=$((sess + 1))
+                else
+                        daem=$((daem + 1))
+                fi
+        done <<< "$(ps --ppid 1 --no-headers -o comm)"
+
+        echo "sess: $sess daem: $daem"
+}
+
+function strt()
+{
+        local svcname=$1
+
+        if [ "$svcname" = "" ] ; then
+                echo "svup error: service name missing"
+                return
+        fi
+
+        local output="$(/usr/bin/sudo /usr/sbin/service $svcname start 2>&1)"
+
+        if [ "$output" = "" ] ; then
+                echo "svup ${svcname} has no output"
+        else
+                echo "svup " "$output" | head -n 1
+        fi
+}
+
+function handle_input()
+{
+        local actions
+        local action
+        local params
+
+        read -e -s -t 0 && read -e -s actions
+        if [ "$actions" != "" ] ; then
+                # remove windows' CR
+                actions="${actions//[$'\r']}"
+
+                while read -r command; do
+                        action="${command:0:4}"
+                        params="${command:5}"
+
+                        case "$action" in
+                                stop)
+                                        echo "stop"
+                                        exit 0
+                                        ;;
+                                strt)
+                                        strt "$params"
+                                        ;;
+                                ping)
+                                        echo "pong"
+                                        ;;
+                                *)
+                                        echo "error"
+                        esac
+                done <<< "${actions}"
+        fi
+}
+
+echo "shell: ${shell}"
+echo "version: ${version}"
+while true; do
+        handle_input
+        tick
+        sleep $interval
+done
