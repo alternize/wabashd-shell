@@ -1,10 +1,10 @@
 Package: wabashd-shell
-Version: 4.0.1
+Version: 4.0.2
 Architecture: all
 Essential: no
 Section: utils
 Priority: optional
-Depends: bash (>= 4.3.0)
+Depends: bash (>= 4)
 Maintainer: Thomas <wabashd-shell@alternize.com>
 Installed-Size: 1
 Description: The Windows Service for Linux portion of the wabash session-keepalive system.
